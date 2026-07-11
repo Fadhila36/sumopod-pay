@@ -88,6 +88,56 @@ describe('WebhookVerifier', () => {
       expect(result).toBe(true);
     });
 
+    it('should exactly match the official SumoPod Node.js verification example logic', () => {
+      // 1. Official Node.js verification function from docs
+      function verifyWebhookSignature(secret: string, svixId: string, svixTimestamp: string, svixSignature: string, rawBody: string) {
+        const secretBytes = Buffer.from(secret.replace("whsec_", ""), "base64");
+        const signedContent = `${svixId}.${svixTimestamp}.${rawBody}`;
+      
+        const expectedSignature = createHmac("sha256", secretBytes)
+          .update(signedContent)
+          .digest("base64");
+      
+        // svix-signature may contain multiple space-separated "v1,<sig>" values
+        // (this happens for ~24h after rotating the secret)
+        const signatures = svixSignature.split(" ").map((s) => s.split(",")[1]);
+        return signatures.includes(expectedSignature);
+      }
+
+      const ts = getTimestamp();
+      const sig = computeTestSignature(validBody, ts);
+      
+      const officialResult = verifyWebhookSignature(TEST_SECRET, TEST_SVIX_ID, ts, `v1,${sig}`, validBody);
+      const sdkResult = verifySignature(
+        validBody,
+        {
+          'svix-id': TEST_SVIX_ID,
+          'svix-timestamp': ts,
+          'svix-signature': `v1,${sig}`,
+        },
+        TEST_SECRET
+      );
+
+      // They should both return true and be identical in result
+      expect(officialResult).toBe(true);
+      expect(sdkResult).toBe(officialResult);
+
+      // Now test with multiple signatures
+      const multipleSigResultOfficial = verifyWebhookSignature(TEST_SECRET, TEST_SVIX_ID, ts, `v1,badsig v1,${sig}`, validBody);
+      const multipleSigResultSdk = verifySignature(
+        validBody,
+        {
+          'svix-id': TEST_SVIX_ID,
+          'svix-timestamp': ts,
+          'svix-signature': `v1,badsig v1,${sig}`,
+        },
+        TEST_SECRET
+      );
+
+      expect(multipleSigResultOfficial).toBe(true);
+      expect(multipleSigResultSdk).toBe(multipleSigResultOfficial);
+    });
+
     it('should return false when headers are missing', () => {
       const result = verifySignature(
         validBody,

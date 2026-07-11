@@ -135,4 +135,23 @@ describe('FetchClient', () => {
     expect(result).toHaveProperty('payment_id');
     expect(attempts).toBe(2);
   });
+
+  it('should fallback to globalThis.fetch if fetchImpl is not provided', async () => {
+    const client = new FetchClient({
+      baseUrl: 'https://api-pay-sandbox.sumopod.com/api/v1',
+      apiKey: 'test_api_key_1234',
+      maxRetries: 3,
+      timeoutMs: 30_000,
+      // intentionally omitting fetchImpl
+    });
+
+    // In our test environment, globalThis.fetch throws a specific error
+    await expect(
+      client.request({
+        method: 'POST',
+        path: '/payments',
+        body: { order_id: 'ORD-FALLBACK' },
+      }),
+    ).rejects.toThrow(/NETWORK CALL DETECTED/);
+  });
 });
