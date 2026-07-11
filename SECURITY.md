@@ -12,7 +12,10 @@ The following versions of the SumoPod Payment SDK are currently being supported 
 
 If you discover a security vulnerability within `sumopod-pay`, please **DO NOT** open a public issue.
 
-Instead, please send an e-mail to Muhammad Fadhila Abiyyu Faris at <fadhila36@users.noreply.github.com>. All security vulnerabilities will be promptly addressed.
+Please report security vulnerabilities privately via GitHub Security Advisories at:
+https://github.com/fadhila36/sumopod-pay/security/advisories/new
+
+All security vulnerabilities will be promptly addressed.
 
 ## Security Practices Implemented
 

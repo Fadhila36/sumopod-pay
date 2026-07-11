@@ -29,24 +29,24 @@
     "bun": ">=1.0"
   },
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./express": {
       "types": "./dist/express.d.ts",
-      "import": "./dist/express.mjs",
-      "require": "./dist/express.js"
+      "import": "./dist/express.js",
+      "require": "./dist/express.cjs"
     },
     "./nest": {
       "types": "./dist/nest.d.ts",
-      "import": "./dist/nest.mjs",
-      "require": "./dist/nest.js"
+      "import": "./dist/nest.js",
+      "require": "./dist/nest.cjs"
     }
   },
   "files": [
@@ -56,13 +56,14 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:smoke",
+    "test:smoke": "node test/smoke/cjs-require.cjs && node test/smoke/esm-import.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:bun": "bun test",
     "lint": "eslint src/ test/ --ext .ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build && npm run test:smoke"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0 || ^11.0.0",
