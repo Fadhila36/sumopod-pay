@@ -7,11 +7,8 @@ import {
   SumoPodValidationError,
   SumoPodApiError,
 } from '../../src/exceptions/index.js';
-import {
-  resetCallCount,
-  getCallCount,
-} from '../__mocks__/msw-handlers.js';
 import type { CreatePaymentDto } from '../../src/dto/payment.dto.js';
+import { createMockFetch } from '../__mocks__/fetch-mock.js';
 
 const VALID_PAYMENT: CreatePaymentDto = {
   order_id: 'ORD-001',
@@ -20,9 +17,6 @@ const VALID_PAYMENT: CreatePaymentDto = {
 };
 
 describe('SumoPodClient', () => {
-  beforeEach(() => {
-    resetCallCount();
-  });
 
   describe('constructor', () => {
     it('should throw SumoPodValidationError when apiKey is empty', () => {
@@ -49,27 +43,41 @@ describe('SumoPodClient', () => {
 
   describe('createPayment', () => {
     it('should create payment successfully with valid payload', async () => {
+      const mock = createMockFetch([
+        {
+          status: 200,
+          body: {
+            payment_id: '12345678-1234-1234-1234-1234567890ab',
+            order_id: 'ORD-001',
+            amount: 100_000,
+            fee: 1000,
+            net_amount: 99000,
+            payment_link_url: 'https://pay.sumopod.com/link',
+            status: 'pending',
+            expires_at: '2026-07-12T00:00:00Z',
+          }
+        }
+      ]);
+
       const client = new SumoPodClient({
         apiKey: 'test_dummy_secret_do_not_use_in_production',
         disableRateLimit: true,
+        fetchImpl: mock.fetch,
       });
 
       const result = await client.createPayment(VALID_PAYMENT);
 
-      expect(result).toMatchObject({
-        payment_id: expect.any(String),
-        order_id: 'ORD-001',
-        amount: 100_000,
-        fee: expect.any(Number),
-        net_amount: expect.any(Number),
-        payment_link_url: expect.stringContaining('https://'),
-        status: 'pending',
-        expires_at: expect.any(String),
-      });
-
+      expect(result.order_id).toBe('ORD-001');
+      expect(result.amount).toBe(100_000);
+      expect(typeof result.fee).toBe('number');
+      expect(typeof result.net_amount).toBe('number');
+      expect(result.payment_link_url).toContain('https://');
+      expect(result.status).toBe('pending');
+      expect(typeof result.expires_at).toBe('string');
       expect(result.payment_id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
       );
+      expect(mock.calls.length).toBe(1);
     });
 
     it('should throw SumoPodValidationError when order_id is empty', async () => {
@@ -119,8 +127,13 @@ describe('SumoPodClient', () => {
     });
 
     it('should throw SumoPodApiError on 401 (invalid API key)', async () => {
+      const mock = createMockFetch([
+        { status: 401, body: { message: 'Unauthorized' } },
+        { status: 401, body: { message: 'Unauthorized' } }
+      ]);
       const client = new SumoPodClient({
         apiKey: 'invalid_api_key',
+        fetchImpl: mock.fetch,
       });
 
       await expect(
@@ -136,54 +149,62 @@ describe('SumoPodClient', () => {
     });
 
     it('should retry on 500 and succeed on 3rd attempt', async () => {
+      const mock = createMockFetch([
+        { status: 500, body: { message: 'Internal Server Error' } },
+        { status: 502, body: { message: 'Bad Gateway' } },
+        { status: 200, body: { status: 'pending', order_id: 'ORD-001' } },
+      ]);
       const client = new SumoPodClient({
         apiKey: 'retry_test_key',
         maxRetries: 3,
+        fetchImpl: mock.fetch,
       });
-
-      resetCallCount();
 
       const result = await client.createPayment(VALID_PAYMENT);
 
       expect(result.status).toBe('pending');
       expect(result.order_id).toBe('ORD-001');
-      // The handler returns 500 for calls 1 and 2, succeeds on call 3
-      expect(getCallCount()).toBe(3);
+      expect(mock.calls.length).toBe(3);
     });
 
     it('should NOT retry on 400 (client error)', async () => {
+      const mock = createMockFetch([
+        { status: 400, body: { message: 'Bad Request' } }
+      ]);
       const client = new SumoPodClient({
         apiKey: 'bad_request_key',
         maxRetries: 3,
+        fetchImpl: mock.fetch,
       });
-
-      resetCallCount();
 
       await expect(
         client.createPayment(VALID_PAYMENT),
       ).rejects.toThrow(SumoPodApiError);
 
-      // Should only have called fetch once — no retry for 4xx
-      expect(getCallCount()).toBe(1);
+      expect(mock.calls.length).toBe(1);
     });
 
     it('should default expires_in_hours to 24 when not provided', async () => {
+      const mock = createMockFetch([
+        { status: 200, body: { status: 'pending', order_id: 'ORD-DEFAULT' } }
+      ]);
       const client = new SumoPodClient({
         apiKey: 'test_dummy_secret_do_not_use_in_production',
         disableRateLimit: true,
+        fetchImpl: mock.fetch,
       });
 
-      // This test validates that the client sends the default value.
-      // The MSW handler accepts whatever is sent and returns a valid response.
       const result = await client.createPayment({
         order_id: 'ORD-DEFAULT',
         amount: 75_000,
         currency: 'IDR',
-        // Note: expires_in_hours not provided — should default to 24
       });
 
       expect(result).toBeDefined();
       expect(result.status).toBe('pending');
+      
+      const parsedBody = JSON.parse(mock.calls[0].body as string);
+      expect(parsedBody.expires_in_hours).toBe(24);
     });
 
     it('should throw SumoPodValidationError for unsupported currency', async () => {
@@ -225,13 +246,13 @@ describe('SumoPodClient', () => {
   describe('rate limiter', () => {
     it('should block requests exceeding the rate limit', async () => {
       // By default capacity is 50, refill is 50/sec.
+      const mock = createMockFetch(Array(60).fill({ status: 200, body: { status: 'pending' } }));
       const client = new SumoPodClient({
         apiKey: 'test_dummy_secret_do_not_use_in_production',
         disableRateLimit: false,
+        fetchImpl: mock.fetch,
       });
 
-      // Send 60 requests concurrently. Capacity is 50.
-      // At least some of the trailing requests should hit the rate limiter synchronously.
       const promises = [];
       let rateLimitHit = false;
 
@@ -250,19 +271,3 @@ describe('SumoPodClient', () => {
     });
   });
 });
-
-/*
-Expected output (npm run test):
-
- ✓ test/unit/sumopod.client.test.ts (8 tests) 120ms
-   ✓ SumoPodClient > constructor > should throw SumoPodValidationError when apiKey is empty
-   ✓ SumoPodClient > constructor > should throw SumoPodValidationError when apiKey is whitespace
-   ✓ SumoPodClient > createPayment > should create payment successfully with valid payload
-   ✓ SumoPodClient > createPayment > should throw SumoPodValidationError when order_id is empty
-   ✓ SumoPodClient > createPayment > should throw SumoPodValidationError when amount is zero or negative
-   ✓ SumoPodClient > createPayment > should throw SumoPodApiError on 401 (invalid API key)
-   ✓ SumoPodClient > createPayment > should retry on 500 and succeed on 3rd attempt
-   ✓ SumoPodClient > createPayment > should NOT retry on 400 (client error)
-   ✓ SumoPodClient > createPayment > should default expires_in_hours to 24 when not provided
-   ✓ SumoPodClient > getMaskedApiKey > should mask API key showing only last 4 characters
-*/

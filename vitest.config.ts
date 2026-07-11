@@ -27,6 +27,6 @@ export default defineConfig({
         lines: 90,
       },
     },
-    setupFiles: ['./test/__mocks__/msw-setup.ts'],
+    setupFiles: ['./test/setup.ts'],
   },
 });

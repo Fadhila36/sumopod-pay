@@ -104,6 +104,7 @@ export class SumoPodClient {
       apiKey: config.apiKey,
       maxRetries: config.maxRetries ?? DEFAULT_MAX_RETRIES,
       timeoutMs: config.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      fetchImpl: config.fetchImpl,
     });
   }
 

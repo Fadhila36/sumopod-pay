@@ -13,6 +13,7 @@ export interface FetchClientConfig {
   apiKey: string;
   maxRetries: number;
   timeoutMs: number;
+  fetchImpl?: typeof fetch;
 }
 
 export interface FetchRequestOptions {
@@ -34,12 +35,14 @@ export class FetchClient {
   private readonly apiKey: string;
   private readonly maxRetries: number;
   private readonly timeoutMs: number;
+  private readonly fetchImpl: typeof fetch;
 
   constructor(config: FetchClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/+$/, '');
     this.apiKey = config.apiKey;
     this.maxRetries = config.maxRetries;
     this.timeoutMs = config.timeoutMs;
+    this.fetchImpl = config.fetchImpl ?? globalThis.fetch;
   }
 
   /**
@@ -62,7 +65,7 @@ export class FetchClient {
           this.timeoutMs,
         );
 
-        const response = await fetch(url, {
+        const response = await this.fetchImpl(url, {
           method: options.method,
           headers,
           body: options.body ? JSON.stringify(options.body) : undefined,

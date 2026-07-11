@@ -34,6 +34,11 @@ export interface SumoPodConfig {
    */
   disableRateLimit?: boolean;
 
+  /**
+   * Custom fetch implementation for Dependency Injection (DI).
+   * Primarily used for testing to bypass MSW limitations across runtimes.
+   */
+  fetchImpl?: typeof fetch;
 }
 
 /** Webhook verification configuration */
