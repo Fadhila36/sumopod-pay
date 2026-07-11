@@ -1,7 +1,7 @@
 # sumopod-pay
 
 [![npm version](https://img.shields.io/npm/v/sumopod-pay.svg)](https://www.npmjs.com/package/sumopod-pay)
-[![CI](https://github.com/sumopod/sumopod-pay/actions/workflows/ci.yml/badge.svg)](https://github.com/sumopod/sumopod-pay/actions/workflows/ci.yml)
+[![CI](https://github.com/Fadhila36/sumopod-pay/actions/workflows/ci.yml/badge.svg)](https://github.com/Fadhila36/sumopod-pay/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -17,7 +17,7 @@
 - 🔒 **Secure webhook verification** — Svix-style HMAC signatures + token-based, constant-time comparison
 - ♻️ **Automatic retry** — Exponential backoff for 5xx/network errors (never retries 4xx)
 - 📦 **Dual ESM/CJS** — Subpath exports with full TypeScript declarations
-- 🧪 **Thoroughly tested** — Vitest + MSW, 90%+ coverage
+- 🧪 **Thoroughly tested** — Vitest + DI fetch mock, 90%+ coverage
 
 ---
 
