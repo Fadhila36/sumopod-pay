@@ -42,10 +42,10 @@ declare global {
 }
 
 /**
- * Creates an Express middleware that verifies SumoPod webhook requests.
- *
- * The middleware expects `express.raw({ type: 'application/json' })` to be applied
- * BEFORE this middleware so that `req.body` is a Buffer containing the raw body.
+ * Express middleware for SumoPod webhook verification.
+ * 
+ * Note: Must be used after `express.raw({ type: 'application/json' })`
+ * @param options - Webhook configuration options
  */
 export function sumopodWebhookMiddleware(
   options: ExpressWebhookOptions,

@@ -1,18 +1,8 @@
-/**
- * Webhook verification for SumoPod Payment Gateway.
- *
- * Supports two verification methods:
- * 1. Signature (Svix-style) — HMAC-SHA256 with svix-id, svix-timestamp, svix-signature headers
- * 2. Token — simple constant-time comparison of X-Webhook-Token header
- */
 import {
   hmacSha256Base64,
   constantTimeEqual,
 } from '../core/crypto/crypto.adapter.js';
 
-/**
- * Headers expected for Svix-style signature verification.
- */
 export interface SvixHeaders {
   'svix-id': string;
   'svix-timestamp': string;
@@ -22,11 +12,11 @@ export interface SvixHeaders {
 /**
  * Verify a Svix-style HMAC-SHA256 webhook signature.
  *
- * @param rawBody   - The raw request body as a string (must be the exact bytes received)
- * @param headers   - The svix-id, svix-timestamp, and svix-signature headers
- * @param secret    - The webhook secret (e.g. "whsec_dGVzdHNlY3JldA==")
- * @param tolerance - Maximum allowed time difference in seconds between signature and current time (default 300)
- * @returns `true` if any of the signatures in the header match and the timestamp is within tolerance
+ * @param rawBody - Raw request body string
+ * @param headers - Svix headers
+ * @param secret - Webhook secret (whsec_...)
+ * @param tolerance - Max clock skew tolerance in seconds
+ * @returns true if valid
  */
 export function verifySignature(
   rawBody: string,
@@ -42,36 +32,34 @@ export function verifySignature(
     return false;
   }
 
-  // Prevent replay attacks / clock drift anomalies
+  // prevent replay attacks / clock drift anomalies
   const timestampNum = parseInt(svixTimestamp, 10);
   if (isNaN(timestampNum)) return false;
 
   const now = Math.floor(Date.now() / 1000);
-  // Compare using absolute difference so that both old payloads and future payloads (from clock skew) are rejected
+  // reject both old payloads and future payloads from clock skew
   if (Math.abs(now - timestampNum) > tolerance) {
     return false;
   }
 
-  // Strip the "whsec_" prefix and base64-decode the secret
+  // strip whsec_ prefix if present
   const secretBase64 = secret.startsWith('whsec_')
     ? secret.slice(6)
     : secret;
   const secretBytes = Buffer.from(secretBase64, 'base64');
 
-  // Construct the signed content
   const signedContent = `${svixId}.${svixTimestamp}.${rawBody}`;
-
-  // Compute expected signature
   const expectedSig = hmacSha256Base64(secretBytes, signedContent);
 
-  // svix-signature can contain multiple space-separated values: "v1,<sig1> v1,<sig2>"
+  // svix-signature might have multiple values separated by space
   const signatures = svixSignatureHeader.split(' ');
 
   for (const sigEntry of signatures) {
     const parts = sigEntry.split(',');
     if (parts.length < 2 || parts[0] !== 'v1') continue;
 
-    const candidateSig = parts.slice(1).join(','); // rejoin in case base64 contains no comma, but be safe
+    // rejoin in case base64 contains no comma, though it usually doesn't
+    const candidateSig = parts.slice(1).join(',');
     if (constantTimeEqual(expectedSig, candidateSig)) {
       return true;
     }
@@ -81,11 +69,11 @@ export function verifySignature(
 }
 
 /**
- * Verify a webhook using a simple token comparison.
+ * Verify a webhook using a simple constant-time token comparison.
  *
- * @param receivedToken  - The token from the X-Webhook-Token header
- * @param expectedToken  - The expected webhook token (e.g. "whtok_xxx")
- * @returns `true` if the tokens match (constant-time comparison)
+ * @param receivedToken - Token from X-Webhook-Token header
+ * @param expectedToken - Expected webhook token
+ * @returns true if tokens match
  */
 export function verifyToken(
   receivedToken: string,

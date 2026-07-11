@@ -1,11 +1,3 @@
-/**
- * Fetch-based HTTP client with retry logic for the SumoPod API.
- *
- * - Uses native `fetch` (Node 18+ / Bun)
- * - Retries on network errors and 5xx responses with exponential backoff
- * - Never retries 4xx responses
- * - Masks API key in any logged output
- */
 import { SumoPodApiError } from '../../exceptions/index.js';
 
 export interface FetchClientConfig {
@@ -22,9 +14,6 @@ export interface FetchRequestOptions {
   body?: unknown;
 }
 
-/**
- * Masks an API key for safe logging — shows only the last 4 characters.
- */
 export function maskApiKey(apiKey: string): string {
   if (apiKey.length <= 4) return '****';
   return '*'.repeat(apiKey.length - 4) + apiKey.slice(-4);
@@ -45,9 +34,6 @@ export class FetchClient {
     this.fetchImpl = config.fetchImpl ?? globalThis.fetch;
   }
 
-  /**
-   * Execute an HTTP request with retry logic.
-   */
   async request<T>(options: FetchRequestOptions): Promise<T> {
     const url = `${this.baseUrl}${options.path}`;
     const headers: Record<string, string> = {
@@ -86,7 +72,7 @@ export class FetchClient {
           parsedBody = responseBody;
         }
 
-        // 4xx — never retry client errors
+        // never retry 4xx client errors
         if (response.status >= 400 && response.status < 500) {
           throw new SumoPodApiError(
             response.status,
@@ -96,7 +82,7 @@ export class FetchClient {
           );
         }
 
-        // 5xx — retry with backoff
+        // retry 5xx with backoff
         lastError = new SumoPodApiError(
           response.status,
           this.extractErrorMessage(parsedBody) ||
@@ -126,9 +112,6 @@ export class FetchClient {
     throw lastError ?? new Error('Request failed after retries');
   }
 
-  /**
-   * Exponential backoff: 200ms, 400ms, 800ms, ...
-   */
   private getBackoffMs(attempt: number): number {
     return Math.min(200 * Math.pow(2, attempt), 10_000);
   }

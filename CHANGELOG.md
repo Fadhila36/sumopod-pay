@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.2] - 2026-07-11
+
+### Changed
+- Internal code style improvements, no functional changes.
+
 ## [0.1.1] - 2026-07-11
 
 ### Fixed

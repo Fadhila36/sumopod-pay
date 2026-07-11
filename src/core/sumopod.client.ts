@@ -1,11 +1,3 @@
-/**
- * @packageDocumentation
- * Part of `sumopod-pay` SDK
- * @author Muhammad Fadhila Abiyyu Faris (https://github.com/fadhila36)
- *
- * SumoPodClient — the core SDK class.
- * Pure TypeScript, framework-agnostic. Works with Node.js ≥18 and Bun ≥1.0.
- */
 import type { SumoPodConfig } from '../interfaces/config.interface.js';
 import type {
   CreatePaymentDto,
@@ -41,7 +33,7 @@ class TokenBucket {
   }
 }
 
-// Zod schema singleton pattern (thread-safe for concurrent first requests)
+// thread-safe for concurrent first requests
 let zodPromise: Promise<any> | null = null;
 let zodSchema: any = null;
 
@@ -64,7 +56,7 @@ function getZodSchema(): Promise<any> {
       return zodSchema;
     })
     .catch(() => {
-      // Optional dependency not installed, fallback to manual
+      // fallback to manual validation if zod isn't installed
       zodSchema = false;
       return false;
     });
@@ -95,7 +87,7 @@ export class SumoPodClient {
     this.maskedKey = maskApiKey(config.apiKey);
 
     if (!config.disableRateLimit) {
-      // Allow 50 requests per second burst/refill (generous enough for typical use, prevents massive retry loops)
+      // allow 50 requests per second burst/refill (generous enough for typical use)
       this.rateLimiter = new TokenBucket(50, 50);
     }
 
@@ -109,12 +101,10 @@ export class SumoPodClient {
   }
 
   /**
-   * Create a new payment.
+   * Create a new payment link.
    *
    * @param dto - Payment creation parameters
-   * @returns The created payment details including the payment link URL
-   * @throws SumoPodValidationError if input is invalid
-   * @throws SumoPodApiError if the API returns an error or client rate limit exceeded
+   * @returns Payment details including the payment_link_url
    */
   async createPayment(dto: CreatePaymentDto): Promise<PaymentResponse> {
     if (this.rateLimiter && !this.rateLimiter.consume()) {
@@ -128,9 +118,10 @@ export class SumoPodClient {
         throw new SumoPodValidationError('payload', `Validation failed: ${result.error.message}`);
       }
     } else {
-      this.validateCreatePaymentFallback(dto);
+      this.manualValidate(dto);
     }
 
+    // TODO: maybe add support for custom idempotency keys later
     const body = {
       ...dto,
       expires_in_hours: dto.expires_in_hours ?? DEFAULT_EXPIRES_IN_HOURS,
@@ -145,12 +136,13 @@ export class SumoPodClient {
 
   /**
    * Get the masked API key (safe for logging).
+   * @returns Masked API key string
    */
   getMaskedApiKey(): string {
     return this.maskedKey;
   }
 
-  private validateCreatePaymentFallback(dto: CreatePaymentDto): void {
+  private manualValidate(dto: CreatePaymentDto): void {
     if (!dto.order_id || typeof dto.order_id !== 'string' || dto.order_id.trim() === '' || dto.order_id.length > 64) {
       throw new SumoPodValidationError('order_id', 'order_id is required, must be a string, and max 64 characters.');
     }

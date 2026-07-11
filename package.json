@@ -1,6 +1,6 @@
 {
   "name": "sumopod-pay",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Unofficial SDK for SumoPod Payment Gateway — works with Node.js, Bun, Express, and NestJS",
   "author": "Muhammad Fadhila Abiyyu Faris <fadhila36@users.noreply.github.com>",
   "repository": {

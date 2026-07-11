@@ -16,7 +16,10 @@ import {
 } from '../webhook.verifier.js';
 import { SUMOPOD_OPTIONS } from './sumopod.constants.js';
 import type { SumoPodModuleOptions } from '../../interfaces/config.interface.js';
-
+/**
+ * NestJS Guard for verifying SumoPod webhooks.
+ * Uses `SumoPodModuleOptions` to determine the verification method.
+ */
 @Injectable()
 export class SumoPodWebhookGuard implements CanActivate {
   constructor(

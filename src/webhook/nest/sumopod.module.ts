@@ -1,20 +1,5 @@
 /**
  * NestJS dynamic module for SumoPod Payment Gateway.
- *
- * Usage:
- * ```ts
- * import { SumoPodModule } from 'sumopod-pay/nest';
- *
- * @Module({
- *   imports: [
- *     SumoPodModule.forRoot({
- *       apiKey: process.env.SUMOPOD_API_KEY!,
- *       webhookSecret: process.env.SUMOPOD_WEBHOOK_SECRET,
- *     }),
- *   ],
- * })
- * export class AppModule {}
- * ```
  */
 import { Module, DynamicModule, Provider } from '@nestjs/common';
 import type {

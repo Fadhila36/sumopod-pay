@@ -1,11 +1,10 @@
 # sumopod-pay
 
 [![npm version](https://img.shields.io/npm/v/sumopod-pay.svg)](https://www.npmjs.com/package/sumopod-pay)
-[![CI](https://github.com/Fadhila36/sumopod-pay/actions/workflows/ci.yml/badge.svg)](https://github.com/Fadhila36/sumopod-pay/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> Unofficial SDK for **SumoPod Payment Gateway** — works with Node.js, Bun, Express, and NestJS.
+Hey there! 👋 This is an unofficial SDK for the **SumoPod Payment Gateway** that I put together. 
+I needed a simple, modern way to integrate SumoPod with Node.js, Bun, Express, and NestJS without writing boilerplate from scratch every time, so here it is. It's written in TypeScript and works out of the box with the latest runtimes.
 
 > [!WARNING]
 > **Disclaimer:** This package is an unofficial SDK created by a third party. It is not affiliated with, maintained, authorized, endorsed, or sponsored by SumoPod. All trademarks, service marks, and trade names of SumoPod used herein are the property of SumoPod.

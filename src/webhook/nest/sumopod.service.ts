@@ -27,14 +27,17 @@ export class SumoPodService {
   }
 
   /**
-   * Create a payment via the SumoPod API.
+   * Create a payment link via the SumoPod API.
+   * @param dto - Payment creation parameters
+   * @returns Payment details including the payment_link_url
    */
   async createPayment(dto: CreatePaymentDto): Promise<PaymentResponse> {
     return this.client.createPayment(dto);
   }
 
   /**
-   * Access the underlying SumoPodClient for advanced usage.
+   * Access the underlying SumoPodClient.
+   * @returns The raw SumoPodClient instance
    */
   getClient(): SumoPodClient {
     return this.client;
