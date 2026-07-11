@@ -5,7 +5,7 @@
   "author": "Muhammad Fadhila Abiyyu Faris <fadhila36@users.noreply.github.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fadhila36/sumopod-pay.git"
+    "url": "git+https://github.com/fadhila36/sumopod-pay.git"
   },
   "bugs": {
     "url": "https://github.com/fadhila36/sumopod-pay/issues"
